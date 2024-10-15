@@ -18,21 +18,10 @@ The three parts of this project are:
 ### Objective
 Learn the basic syntax and features of OpenMP and how to control variable visibility and scoping through different clauses: `private`, `firstprivate`, and `shared`. The goal is to understand how variables are handled inside and outside parallel regions.
 
-### Tasks
-- Implement a simple HelloWorld program with OpenMP.
-- Test with/without different OpenMP clauses: `private`, `firstprivate`, and `shared`.
-- Observe how the variables behave when placed inside and outside parallel regions.
-
-### Steps
-1. Write a simple HelloWorld program.
-2. Use OpenMP to parallelize the printing of messages using the `#pragma omp parallel` directive.
-3. Experiment with the following clauses:
-   - **private**: Ensures each thread has its own local copy of a variable.
-   - **firstprivate**: Similar to `private`, but the initial value is copied from the main thread.
-   - **shared**: All threads access the same variable.
-
-### Conclusion
-Summarize how different clauses impact variable visibility and performance. Discuss how variables declared inside/outside the parallel region behave with each OpenMP clause.
+   - **private**: Each thread gets its own uninitialized copy. Changes made to the variable do not affect the original value outside the parallel region.
+   - **firstprivate**: Each thread gets its own copy initialized with the value of the variable before the parallel region. Changes inside the region are not reflected outside.
+   - **shared**: All threads share the same variable. Changes made by one thread affect all others, and changes persist outside the region.
+   - **No Clauses**: The behavior depends on the default settings of the OpenMP implementation. If variables are treated as shared, race conditions may occur.
 
 ---
 
@@ -41,18 +30,15 @@ Summarize how different clauses impact variable visibility and performance. Disc
 ### Objective
 Explore the use of OpenMP's `reduction` clause to compute the sum of values in an array. Compare the performance of `reduction` with other synchronization techniques such as `atomic` and `critical`.
 
-### Tasks
-- Implement parallel code for array sum computation using the `reduction` clause.
-- Compare the response time with implementations using `atomic` and `critical`.
+   - **Reduction**: OpenMP internally optimizes the summation across threads, and the reduction clause ensures efficient handling of race conditions. This method is expected to be the fastest in most cases.
+   - **Atomic**: The atomic clause ensures that only one thread at a time updates the shared sum variable, but it introduces some performance overhead compared to reduction.
+   - **Critical**: The critical section is the most restrictive in terms of parallelism. It forces all threads to take turns updating the sum, which usually leads to the slowest execution time.
 
-### Steps
-1. Initialize an array with a large number of elements.
-2. Use OpenMP to compute the sum of the array elements using the `reduction` clause.
-3. Implement the same sum calculation using `atomic` and `critical` to protect the sum variable.
-4. Measure and compare the execution time for each implementation.
 
 ### Conclusion
-Analyze the time taken by each method (reduction, atomic, critical) and conclude which method is most efficient for parallel sum computations.
+Reduction should be preferred for summation tasks due to its balance of speed and safety.
+Atomic is useful when fine-grained locking is needed, though it still incurs some performance overhead.
+Critical should be avoided for simple summation due to its poor performance, as it serializes access to the shared variable.
 
 ---
 
@@ -61,17 +47,7 @@ Analyze the time taken by each method (reduction, atomic, critical) and conclude
 ### Objective
 Implement parallel code to compute prime numbers in different ranges. Measure and compare the total time taken for prime number calculations with different ranges (10, 100, 1000, 10,000, 100,000).
 
-### Tasks
-- Implement code to calculate prime numbers in parallel using OpenMP.
-- Test the implementation with different number ranges.
-- Measure the total time taken for each range.
-
-### Steps
-1. Write a function to check if a number is prime.
-2. Use OpenMP to parallelize the process of finding prime numbers.
-3. Run the code for different number ranges (e.g., 10, 100, 1000, 10,000, 100,000).
-4. Record and compare the time taken for each range.
-
-### Conclusion
-Summarize the performance of the parallel prime number computation for different ranges. Discuss any potential performance bottlenecks or scalability issues.
-
+### Explanation
+Outer Parallel Loop: The #pragma omp parallel for around the outer loop (for (int r = 0; r < num_ranges; r++)) allows each range (like 10, 100, etc.) to be processed in parallel by different threads.
+Inner Parallel Loop: Inside the loop, for each range, there's another parallel #pragma omp parallel for that calculates the number of primes in the range. This uses reduction(+:count) to safely update the number of primes found.
+Storing Results: The number of primes found for each range is stored in the results[] array, which is printed at the end.
